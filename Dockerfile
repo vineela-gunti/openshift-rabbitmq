@@ -1,7 +1,37 @@
 FROM openshift/base-centos7
 
 MAINTAINER Luis Fernando Gomes <your@luiscoms.com.br>
+USER root
 
+COPY . /tmp/src
+
+
+
+#RUN mkdir -p /tmp/scripts
+
+
+
+RUN rm -rf /tmp/src/.git* && \
+
+    chown -R 1001 /tmp/src && \
+
+    chgrp -R 0 /tmp/src && \
+
+    chmod -R g+w /tmp/src && \
+
+    rm -rf /tmp/scripts && \
+
+    mv /tmp/src/.s2i/bin /tmp/scripts
+    
+LABEL io.k8s.description="Rabbitmq Server" \
+
+      io.k8s.display-name="Rabbitmq Server" \
+
+      io.openshift.s2i.scripts-url="image:///opt/app-root/s2i" \
+
+      io.openshift.expose-services="8080:http" \
+
+      io.openshift.tags="builder,http"    
 ENV ERLANG_SOLUTIONS_VERSION 1.0-1
 RUN yum update -y && yum clean all
 RUN yum install -y wget && yum clean all
@@ -39,6 +69,14 @@ VOLUME /var/lib/rabbitmq/
 
 RUN ls -la /var/lib/rabbitmq/
 
+EXPOSE 15671 15672
+
+
+
+RUN chmod +x /tmp/scripts/assemble
+
+RUN /tmp/scripts/assemble
+
 COPY ./docker-entrypoint.sh /usr/local/bin/
 
 USER "rabbitmq"
@@ -46,3 +84,5 @@ USER "rabbitmq"
 # CMD "/docker-entrypoint.sh"
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["rabbitmq-server"]
+
+USER 1001
